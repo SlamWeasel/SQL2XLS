@@ -1,0 +1,16 @@
+C:\Users\3rike\source\repos\SQL2XLS\bin\Debug\SQL2XLS.exe.config
+C:\Users\3rike\source\repos\SQL2XLS\bin\Debug\SQL2XLS.exe
+C:\Users\3rike\source\repos\SQL2XLS\bin\Debug\SQL2XLS.pdb
+C:\Users\3rike\source\repos\SQL2XLS\obj\Debug\SQL2XLS.csproj.AssemblyReference.cache
+C:\Users\3rike\source\repos\SQL2XLS\obj\Debug\SQL2XLS.csproj.SuggestedBindingRedirects.cache
+C:\Users\3rike\source\repos\SQL2XLS\obj\Debug\MainWindow.g.cs
+C:\Users\3rike\source\repos\SQL2XLS\obj\Debug\App.g.cs
+C:\Users\3rike\source\repos\SQL2XLS\obj\Debug\SQL2XLS_MarkupCompile.cache
+C:\Users\3rike\source\repos\SQL2XLS\obj\Debug\SQL2XLS_MarkupCompile.lref
+C:\Users\3rike\source\repos\SQL2XLS\obj\Debug\MainWindow.baml
+C:\Users\3rike\source\repos\SQL2XLS\obj\Debug\SQL2XLS.g.resources
+C:\Users\3rike\source\repos\SQL2XLS\obj\Debug\SQL2XLS.Properties.Resources.resources
+C:\Users\3rike\source\repos\SQL2XLS\obj\Debug\SQL2XLS.csproj.GenerateResource.cache
+C:\Users\3rike\source\repos\SQL2XLS\obj\Debug\SQL2XLS.csproj.CoreCompileInputs.cache
+C:\Users\3rike\source\repos\SQL2XLS\obj\Debug\SQL2XLS.exe
+C:\Users\3rike\source\repos\SQL2XLS\obj\Debug\SQL2XLS.pdb
