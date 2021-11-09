@@ -23,6 +23,8 @@ namespace SQL2XLS
         public MainWindow()
         {
             InitializeComponent();
+
+            //This git damn shod
         }
     }
 }
