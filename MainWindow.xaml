@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="554" Width="628">
     <Grid>
-        <Label x:Name="InputPanel" Content="sql-Datei ablegen" Margin="10,10,245,0" BorderThickness="1,1,1,1" BorderBrush="Gray" Background="#FFD1D1D1" Height="120" VerticalAlignment="Top" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontWeight="Bold" FontFamily="Bahnschrift Light" FontSize="18" Foreground="#FF868686"/>
+        <Label x:Name="InputPanel" Content="sql-Datei ablegen" Margin="10,10,245,0" BorderThickness="1,1,1,1" BorderBrush="Gray" Background="#FFD1D1D1" Height="120" VerticalAlignment="Top" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontWeight="Bold" FontFamily="Bahnschrift Light" FontSize="18" Foreground="#FF868686" Drop="InputPanel_Drop" AllowDrop="True" MouseLeftButtonDown="InputPanel_MouseLeftButtonDown" MouseLeftButtonUp="InputPanel_MouseLeftButtonUp"/>
         <Button x:Name="ExcelExport" Content=".xls-Export" Height="46" Margin="0,10,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="215">
             <Button.Background>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
@@ -24,16 +24,7 @@
                 </LinearGradientBrush>
             </Button.Background>
         </Button>
-        <TextBox x:Name="OutputBox" Margin="10,150,10,10" TextWrapping="Wrap" Background="#FFF7F7F7" BorderBrush="#FFAFAFAF"/>
-        <TextBlock x:Name="Arrow" Height="24" Margin="0,126,102,0" TextWrapping="Wrap" Text="5" VerticalAlignment="Top" RenderTransformOrigin="0.5,0.5" FontFamily="Webdings" FontSize="36" HorizontalAlignment="Right" Width="32">
-            <TextBlock.RenderTransform>
-                <TransformGroup>
-                    <ScaleTransform/>
-                    <SkewTransform/>
-                    <TranslateTransform/>
-                </TransformGroup>
-            </TextBlock.RenderTransform>
-        </TextBlock>
-
+        <RichTextBox x:Name="OutputBox" Margin="10,150,10,10" Background="#FFF7F7F7" BorderBrush="#FFAFAFAF"/>
+        <TextBlock x:Name="Arrow" Height="24" Margin="0,126,102,0" TextWrapping="Wrap" Text="5" VerticalAlignment="Top" RenderTransformOrigin="0.5,0.5" FontFamily="Webdings" FontSize="36" HorizontalAlignment="Right" Width="32"/>
     </Grid>
 </Window>
