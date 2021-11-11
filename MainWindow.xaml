@@ -24,7 +24,7 @@
                 </LinearGradientBrush>
             </Button.Background>
         </Button>
-        <RichTextBox x:Name="OutputBox" Margin="10,150,10,10" Background="#FFF7F7F7" BorderBrush="#FFAFAFAF"/>
+        <RichTextBox x:Name="OutputBox" Margin="10,150,10,10" Background="#FFF7F7F7" BorderBrush="#FFAFAFAF" FontFamily="Consolas"/>
         <TextBlock x:Name="Arrow" Height="24" Margin="0,126,102,0" TextWrapping="Wrap" Text="5" VerticalAlignment="Top" RenderTransformOrigin="0.5,0.5" FontFamily="Webdings" FontSize="36" HorizontalAlignment="Right" Width="32"/>
     </Grid>
 </Window>

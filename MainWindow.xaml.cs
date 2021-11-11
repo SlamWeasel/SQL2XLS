@@ -11,10 +11,6 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace SQL2XLS
 {
@@ -87,6 +83,13 @@ namespace SQL2XLS
 
                     using (SqlCommand _sqlcmd = new SqlCommand(commandString))
                         Table = ExecuteSQL(_sqlcmd);
+
+                    OutputBox.Document = null;
+                    Paragraph paragraph = new Paragraph();
+                    paragraph.Inlines.Add(TableToString(Table));
+                    FlowDocument flowDocument = new FlowDocument();
+                    flowDocument.Blocks.Add(paragraph);
+                    OutputBox.Document = flowDocument;
                 }
             }
             else
@@ -140,13 +143,59 @@ namespace SQL2XLS
 
         }
 
-        private string ToTableString(List<TableRow> table)
+        private string TableToString(List<TableRow> table)
         {
             string OUT = "";
-            int _cols = table[0].Values.Count;
+            int _cols = table[0].Columns.Count;
             int _rows = table.Count;
+            int[] lengths = new int[_cols];
 
-            return null;
+            /*
+             * Schaut, wie lang die Spalten werden können und merkt sich den Wert in lengths[]
+             */
+            foreach(TableRow row in Table)
+            {
+                int i = 0;
+                foreach(KeyValuePair<string, object> kv in row.Columns)
+                {
+                    if(lengths[i] < kv.Value.ToString().Length || lengths[i] < kv.Key.Length)
+                        lengths[i] = kv.Value.ToString().Length > kv.Key.Length ? kv.Value.ToString().Length : kv.Key.Length;
+                    i++;
+                }
+            }
+
+
+            /*
+             * Schreibt die Spaltennamen auf
+             */
+            for (int i = 0; i < _cols; i++)
+                OUT += table[0].Columns[i].Key + EmptyFiller(lengths[i] - table[0].Columns[i].Key.Length) + " |";
+            OUT += "\n";
+
+            /*
+             * Schreibt die einzelnen Zeilen mit den Spalten in gleichem Abstand geteilt auf
+             */
+            for (int i = 0; i < _rows; i++)
+            {
+                int j = 0;
+                foreach(KeyValuePair<string, object> kv in table[i].Columns)
+                {
+                    OUT += kv.Value + EmptyFiller(lengths[j] - kv.Value.ToString().Length) + " |";
+                    j++;
+                }
+                OUT += "\n";
+            }
+
+
+            return OUT;
+        }
+
+        private string EmptyFiller(int SpaceAmount)
+        {
+            string OUT = "";
+            for (int i = SpaceAmount; i > 0; i--)
+                OUT += " ";
+            return OUT;
         }
     }
 
@@ -162,7 +211,7 @@ namespace SQL2XLS
         /// <list type="Backspace"/>
         /// object - Wert, der in der entsprechenden Spalte steht, kann jeden Typ annehmen
         /// </summary>
-        public ObservableCollection<KeyValuePair<string, object>> Values { get; set; }
+        public ObservableCollection<KeyValuePair<string, object>> Columns { get; set; }
 
         public TableRow() { }
 
@@ -171,9 +220,9 @@ namespace SQL2XLS
         /// </summary>
         /// <param name="ColumnName"></param>
         /// <returns><see cref="object"/> in der Zelle, falls die Spalte nicht existiet </returns>
-        public object GetValue(string ColumnName)
+        public object GetColumnValue(string ColumnName)
         {
-            foreach (KeyValuePair<string, object> kv in Values)
+            foreach (KeyValuePair<string, object> kv in Columns)
                 if (kv.Key == ColumnName)
                     return kv.Value;
             return null;
@@ -183,15 +232,15 @@ namespace SQL2XLS
         /// Gibt alle Werte in der Zeile allein zurück als Array, sortiert nach Abfrage
         /// </summary>
         /// <returns><see cref="object"/><c>[]</c> aller Werte in der Zeile</returns>
-        public object[] GetValues()
+        public object[] GetColumnValues()
         {
             object[] OUT = new object[0];
-            for (int i = 0; i < Values.Count; i++)
-                OUT[i] = Values[i].Value;
+            for (int i = 0; i < Columns.Count; i++)
+                OUT[i] = Columns[i].Value;
             return OUT;
         }
 
         public override string ToString()
-            => "( " + string.Join(" | ", Values) + " )";
+            => "( " + string.Join(" | ", Columns) + " )";
     }
 }
