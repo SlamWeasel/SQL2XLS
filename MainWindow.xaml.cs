@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
@@ -26,7 +27,7 @@ namespace SQL2XLS
         /// <summary>
         /// Stellt die ausgegebene Tabelle dar
         /// </summary>
-        private List<TableRow> Table;
+        private List<TableRow> Table = new List<TableRow>();
 
 
 
@@ -81,15 +82,7 @@ namespace SQL2XLS
                     InputPanel.HorizontalContentAlignment = HorizontalAlignment.Center;
                     InputPanel.VerticalContentAlignment = VerticalAlignment.Center;
 
-                    using (SqlCommand _sqlcmd = new SqlCommand(commandString))
-                        Table = ExecuteSQL(_sqlcmd);
-
-                    OutputBox.Document = null;
-                    Paragraph paragraph = new Paragraph();
-                    paragraph.Inlines.Add(TableToString(Table));
-                    FlowDocument flowDocument = new FlowDocument();
-                    flowDocument.Blocks.Add(paragraph);
-                    OutputBox.Document = flowDocument;
+                    ExecuteSQL();
                 }
             }
             else
@@ -133,10 +126,59 @@ namespace SQL2XLS
         /// </summary>
         /// <param name="cmd"><see cref="SqlCommand"/> der aus der Datei gelesen wurde</param>
         /// <returns><see cref="List{T}"/> aus <see cref="TableRow"/>-Objekten</returns>
-        private List<TableRow> ExecuteSQL(SqlCommand cmd)
+        private void ExecuteSQL()
         {
-            return null;
+            BackgroundWorker worker = new BackgroundWorker();
+            worker.WorkerReportsProgress = true;
+            worker.DoWork += new DoWorkEventHandler(worker_DoWork);
+            worker.ProgressChanged += new ProgressChangedEventHandler(worker_ProgressChanged);
+            worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(worker_RunWorkerCompleted);
+
+            worker.RunWorkerAsync(worker);
         }
+
+        void worker_DoWork(object sender, DoWorkEventArgs e)
+        {
+            using (SqlCommand cmd = new SqlCommand(commandString))
+            {
+                using (SqlConnection cn = new SqlConnection(connectionString))
+                {
+                    cn.Open();
+                    cmd.Connection = cn;
+                    cmd.CommandTimeout = 6000;
+                    using (SqlDataReader read = cmd.ExecuteReader())
+                    {
+                        while(read.Read())
+                        {
+                            TableRow tr = new TableRow();
+
+                            for (int i = 0; i < read.FieldCount; i++)
+                            {
+                                if(read.IsDBNull(i))
+                                    tr.Columns.Add(new KeyValuePair<string, object>(read.GetName(i), ""));
+                                else
+                                    tr.Columns.Add(new KeyValuePair<string, object>(read.GetName(i), read.GetValue(i)));
+                                ((BackgroundWorker)e.Argument).ReportProgress(1);
+                            }
+                            Table.Add(tr);
+                        }
+                    }
+                }
+            }
+        }
+        private void worker_ProgressChanged(object sender, ProgressChangedEventArgs e) 
+        {
+            
+        }
+        private void worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            Paragraph paragraph = new Paragraph();
+            paragraph.Inlines.Add(TableToString(Table));
+            FlowDocument flowDocument = new FlowDocument();
+            flowDocument.Blocks.Add(paragraph);
+            OutputBox.Document = flowDocument;
+        }
+
 
         private void WriteXLS()
         {
@@ -148,7 +190,7 @@ namespace SQL2XLS
             string OUT = "";
             int _cols = table[0].Columns.Count;
             int _rows = table.Count;
-            int[] lengths = new int[_cols];
+            int[] lengths = new int[_cols];         // lengths[] listet die Zeichenlänge der Spalten
 
             /*
              * Schaut, wie lang die Spalten werden können und merkt sich den Wert in lengths[]
@@ -170,6 +212,9 @@ namespace SQL2XLS
              */
             for (int i = 0; i < _cols; i++)
                 OUT += table[0].Columns[i].Key + EmptyFiller(lengths[i] - table[0].Columns[i].Key.Length) + " |";
+            OUT += "\n";
+            for (int i = 0; i < _cols; i++)
+                OUT += LineFiller(lengths[i]) + "+";
             OUT += "\n";
 
             /*
@@ -197,6 +242,13 @@ namespace SQL2XLS
                 OUT += " ";
             return OUT;
         }
+        private string LineFiller(int LineLength)
+        {
+            string OUT = "-";
+            for (int i = LineLength; i > 0; i--)
+                OUT += "-";
+            return OUT;
+        }
     }
 
     /// <summary>
@@ -213,7 +265,7 @@ namespace SQL2XLS
         /// </summary>
         public ObservableCollection<KeyValuePair<string, object>> Columns { get; set; }
 
-        public TableRow() { }
+        public TableRow() { Columns = new ObservableCollection<KeyValuePair<string, object>>(); }
 
         /// <summary>
         /// Gibt die Variable in der namentlich angegebenen Spalte aus

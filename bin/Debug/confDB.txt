@@ -1,0 +1,4 @@
+Data Source=nt-winsped-prod;
+Initial Catalog=WinSped2009;
+User ID=gobabygo;
+Password=comeback
