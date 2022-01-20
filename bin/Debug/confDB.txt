@@ -1,0 +1,4 @@
+Data Source=[Server];
+Initial Catalog=[Database];
+User ID=[User];
+Password=[PWD]
