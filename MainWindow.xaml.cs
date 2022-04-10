@@ -1,298 +1,429 @@
-﻿using System;
+using FixUrlaub.Util;
+using System;
+using System.Windows.Forms;
+using System.Drawing;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Data.SqlClient;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
+using System.Drawing.Drawing2D;
+using FixUrlaub.Controls;
+using System.Drawing.Imaging;
 
-namespace SQL2XLS
+namespace FixUrlaub.Masks
 {
-    /// <summary>
-    /// Interaktionslogik für MainWindow.xaml
-    /// </summary>
-    public partial class MainWindow : Window
+    internal class VacMainForm : VacPaperForm
     {
-        private string connectionString, commandString = "", Path;
-        private bool leftClicked = false, leftDoubleClicked = false, hasFile;
-        private DateTime leftClickedTimestamp = DateTime.MinValue;
+        public VacLeaderForm vlf;
+        public VacCalendarForm vcf;
+        public VacADLogin vadl;
+        public VacSettingsForm vsf;
 
-        /// <summary>
-        /// Stellt die ausgegebene Tabelle dar
-        /// </summary>
-        private List<TableRow> Table = new List<TableRow>();
+        private int xHeight;
+        private float HeightRatio = 0.462963f;
+        private int xWidth;
+        private float WidthRatio = 1;
 
+        #region Controls
+        public Label 
+            SettingsIcon, 
+            ExitIcon, 
+            NameLine, 
+            BirthLine, 
+            IDLine, 
+            DepLine, 
+            YearAnnouncement, 
+            TakenVacLabel, 
+            DaysLabel, 
+            AnnounceLabel, 
+            YearVacLabel,
+            SpecVacLabel,
+            UnpaidVacLabel,
+            ReasonLabel;
+        public SeeThroughTextBox 
+            NameLineField, 
+            IDLineField, 
+            DepLineField, 
+            CurrentYearField, 
+            TakenVacField, 
+            LeftVacField;
+        public DateTimePicker 
+            BirthLineField;
+        #endregion
 
-
-        public MainWindow()
+        public VacMainForm() : base("VacMainForm")
         {
-            InitializeComponent();
+            #region Child-Forms
+            vlf = new VacLeaderForm();
+            vcf = new VacCalendarForm();
+            vadl = new VacADLogin();
+            vsf = new VacSettingsForm();
+            #endregion
 
+            Bounds = new Rectangle(200, 200, (int)Math.Round(500 * FixMath.VacationFormularAspect, 0), 500);
+            xHeight = Height;
+            xWidth = Width;
+
+            LoadControls();
+        }
+
+        private void LoadControls()
+        {
+            Language lang = vsf.cfg.CurrentLanguage;
+
+            #region Icons
+            SettingsIcon = new Label()
+            {
+                Name = "SettingsIcon",
+                Bounds = new Rectangle(1, 1, 30, 30)
+            };
+            SettingsIcon.Paint += (object sender, PaintEventArgs e) =>
+            {
+                // Swaps white with the Secondary Color and uses those changes attributed to draw the new bitmap
+
+                using (Bitmap bmp = ((Icon)resources.GetObject("Vac_Gear")).ToBitmap())
+                {
+                    ColorMap[] colorMap = new ColorMap[1];
+                    colorMap[0] = new ColorMap();
+                    colorMap[0].OldColor = Color.White;
+                    colorMap[0].NewColor = AppliedTheme.Secondary;
+                    ImageAttributes attr = new ImageAttributes();
+                    attr.SetRemapTable(colorMap);
+
+                    Rectangle rect = new Rectangle(0, 0, ((Control)sender).Width + 10, ((Control)sender).Height + 10);
+                    e.Graphics.DrawImage(bmp, rect, 0, 0, 350, 350, GraphicsUnit.Point, attr);  // Using Point as Unit, so it renders it out smoothly
+                }
+            };
+            SettingsIcon.Click += (object sender, EventArgs e) =>
+            {
+                vsf.ShowDialog();
+                vsf.BringToFront();
+            };
+            ExitIcon = new Label()
+            {
+                Name = "ExitIcon",
+                Text = "X",
+                Bounds = new Rectangle(Width - 31, 1, 30, 30),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Font = new Font(FrutigerBoldFam, 20f),
+                ForeColor = vcf.AppliedTheme.Secondary
+            };
+            ExitIcon.Click += (object sender, EventArgs e) => this.Close();
+
+
+            Controls.Add(SettingsIcon);
+            Controls.Add(ExitIcon);
+            #endregion
+
+
+            #region Lablels and Texts
+            NameLine = new Label()
+            {
+                Text = lang.NameLine,
+                Name = lang.NameLine,
+                Location = new Point(Width / 2 - 50, 30),
+                Font = new Font(FrutigerFam, 12),
+                AutoSize = true,
+                ForeColor = vsf.AppliedTheme.Secondary
+            };
+            BirthLine = new Label()
+            {
+                Text = lang.BornLine,
+                Name = lang.BornLine,
+                Location = new Point(Width / 2 - 50, 70),
+                Font = new Font(FrutigerFam, 12),
+                AutoSize = true,
+                ForeColor = vsf.AppliedTheme.Secondary
+            };
+            IDLine = new Label()
+            {
+                Text = " " + lang.UserIDLine,
+                Name = lang.UserIDLine,
+                Location = new Point((int)Math.Round(Width / 1.25f - 50), 70),
+                Font = new Font(FrutigerFam, 12),
+                AutoSize = true,
+                ForeColor = vsf.AppliedTheme.Secondary
+            };
+            DepLine = new Label()
+            {
+                Text = lang.DepartmentLine,
+                Name = lang.DepartmentLine,
+                Location = new Point(Width / 2 - 50, 110),
+                Font = new Font(FrutigerFam, 12),
+                AutoSize = true,
+                ForeColor = vsf.AppliedTheme.Secondary
+            };
+
+            YearAnnouncement = new Label()
+            {
+                Text = lang.YearTag,
+                Name = lang.YearTag,
+                Location = new Point(35, 145),
+                Font = new Font(FrutigerBoldFam, 12),
+                AutoSize = true,
+                ForeColor = vsf.AppliedTheme.Secondary
+            };
+
+            Controls.Add(NameLine);
+            Controls.Add(BirthLine);
+            Controls.Add(IDLine);
+            Controls.Add(DepLine);
+
+            Controls.Add(YearAnnouncement);
+            #endregion
+
+
+            #region Textfields
+            NameLineField = new SeeThroughTextBox(this)
+            {
+                Name = "NameLineField",
+                ForeColor = vcf.AppliedTheme.Tertiary,
+                Bounds = new Rectangle(NameLine.Location.X + NameLine.Width, 23, Width - (NameLine.Location.X + NameLine.Width) - 35, 20)
+            };
+            BirthLineField = new DateTimePicker()
+            {
+                Name = "BirthLineField",
+                Bounds = new Rectangle((Width / 2 - 50) + BirthLine.Width, 63, IDLine.Location.X - ((Width / 2 - 50) + BirthLine.Width), 20),
+                CalendarFont = new Font(FrutigerFam, 12),
+                Font = new Font(FrutigerFam, 12),
+                CalendarForeColor = vcf.AppliedTheme.Secondary,
+                CalendarTrailingForeColor = vcf.AppliedTheme.Secondary,
+                CalendarMonthBackground = vcf.AppliedTheme.Primary,
+                CalendarTitleBackColor = vcf.AppliedTheme.Primary,
+                CalendarTitleForeColor = vcf.AppliedTheme.Secondary,
+                Value = DateTime.Today.AddDays(30),                         // TODO: Put in Birthday Date Automatically
+                Format = DateTimePickerFormat.Short
+            };
+            IDLineField = new SeeThroughTextBox(this)
+            {
+                Name = "IDLineField",
+                ForeColor = vcf.AppliedTheme.Tertiary,
+                Bounds = new Rectangle(IDLine.Location.X + IDLine.Width, 63, Width - (IDLine.Location.X + IDLine.Width) - 35, 20)
+            };
+            DepLineField = new SeeThroughTextBox(this)
+            {
+                Text = "",                                                  // TODO: Put Department in here
+                Name = "DepLineField",
+                ForeColor = vcf.AppliedTheme.Tertiary,
+                Bounds = new Rectangle(DepLine.Location.X + DepLine.Width, 103, Width - (DepLine.Location.X + DepLine.Width) - 35, 20)
+            };
+            CurrentYearField = new SeeThroughTextBox(this)
+            {
+                Text = DateTime.Today.Year.ToString(),
+                Name = "CurrentYearField",
+                ForeColor = vcf.AppliedTheme.Tertiary,
+                Bounds = new Rectangle(YearAnnouncement.Location.X + YearAnnouncement.Width, 145, 50, 20)
+            };
+            TakenVacField = new SeeThroughTextBox(this)
+            {
+                Text = "",                                                  // TODO: Put Vacation Data in here
+                Name = "TakenVacField",
+                ForeColor = vcf.AppliedTheme.Tertiary,
+                Bounds = new Rectangle(35, 190, 40, 20)
+            };
+            Controls.Add(TakenVacField);
+            TakenVacLabel = new Label()
+            {
+                Text = lang.RemainingVac,
+                Name = "TakenVacLabel",
+                ForeColor = vcf.AppliedTheme.Secondary,
+                Location = new Point(TakenVacField.Location.X + TakenVacField.Width, TakenVacField.Location.Y - 4),
+                Font = new Font(FrutigerBoldFam, 12),
+                AutoSize = true,
+                TextAlign = ContentAlignment.BottomLeft
+            };
+            Controls.Add(TakenVacLabel);
+            DaysLabel = new Label()
+            {
+                Text = 1 == 1 ? lang.Day : lang.Days,                       // TODO: Check if its singular or plural
+                Name = "DaysLabel",
+                ForeColor = vcf.AppliedTheme.Secondary,
+                Location = new Point(600, 187),
+                Font = new Font(FrutigerFam, 12),
+                AutoSize = true,
+                TextAlign = ContentAlignment.MiddleRight
+            };
+            Controls.Add(DaysLabel);
+            LeftVacField = new SeeThroughTextBox(this)
+            {
+                Text = "",                                                  // TODO: Put Vacation Data in here
+                Name = "LeftVacField",
+                ForeColor = vcf.AppliedTheme.Tertiary,
+                Bounds = new Rectangle(500, 190, 100, 20)
+            };
+            Controls.Add(LeftVacField);
+            AnnounceLabel = new Label()
+            {
+                Text = lang.Announcement,
+                Name = "AnnounceLabel",
+                ForeColor = vcf.AppliedTheme.Secondary,
+                Location = new Point(35, TakenVacLabel.Location.Y + 33),
+                Font = new Font(FrutigerBoldFam, 12),
+                AutoSize = true
+            };
+            Controls.Add(AnnounceLabel);
+            YearVacLabel = new Label()
+            {
+                Text = lang.YearVac,
+                Name = "YearVacLabel",
+                ForeColor = vcf.AppliedTheme.Secondary,
+                Location = new Point(35, AnnounceLabel.Location.Y + 30),
+                Font = new Font(FrutigerFam, 12),
+                AutoSize = true
+            };
+            Controls.Add(YearVacLabel);
+            SpecVacLabel = new Label()
+            {
+                Text = lang.SpecVac,
+                Name = "SpecVacLabel",
+                ForeColor = vcf.AppliedTheme.Secondary,
+                Location = new Point(35, YearVacLabel.Location.Y + 25),
+                Font = new Font(FrutigerFam, 12),
+                AutoSize = true
+            };
+            Controls.Add(SpecVacLabel);
+            UnpaidVacLabel = new Label()
+            {
+                Text = lang.UnpaidVac,
+                Name = "UnpaidVacLabel",
+                ForeColor = vcf.AppliedTheme.Secondary,
+                Location = new Point(35, SpecVacLabel.Location.Y + 25),
+                Font = new Font(FrutigerFam, 12),
+                AutoSize = true
+            };
+            Controls.Add(UnpaidVacLabel);
+            ReasonLabel = new Label()
+            {
+                Text = lang.Reason,
+                Name = "ReasonLabel",
+                ForeColor = vcf.AppliedTheme.Secondary,
+                Location = new Point(35, UnpaidVacLabel.Location.Y + 50),
+                Font = new Font(FrutigerFam, 12),
+                AutoSize = true
+            };
+            Controls.Add(ReasonLabel);
+
+
+
+            Controls.Add(NameLineField);
+            Controls.Add(BirthLineField);
+            Controls.Add(IDLineField);
+            Controls.Add(DepLineField);
+
+            Controls.Add(CurrentYearField);
+            #endregion
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+
+
+            int SizeRatio = (Height - 470) / 30;
+            Pen LinePen = new Pen(AppliedTheme.Secondary, 2 + (SizeRatio / 5));
+
+
+            e.Graphics.DrawString("fixemer",
+                new Font(FrutigerBoldFam, 24 + SizeRatio),
+                new SolidBrush(AppliedTheme.Secondary),
+                30 + (Width / 1200 * 25),
+                20 + (Height / 1000 * 25));
+            e.Graphics.DrawString(vsf.cfg.CurrentLanguage.LogoTopLeft,
+                new Font(FrutigerBoldFam, 18 + SizeRatio),
+                new SolidBrush(AppliedTheme.Secondary),
+                30 + (Width / 1200 * 25),
+                55 + (Height / 1000 * 25) + SizeRatio);
+            foreach(Control control in Controls)
+                if(control.Name == "DaysLabel")
+                    e.Graphics.DrawString("=",
+                        new Font(FrutigerFam, 12 + SizeRatio),
+                        new SolidBrush(AppliedTheme.Secondary),
+                        control.Location.X - (110 + (SizeRatio * 12)),
+                        control.Location.Y);
+
+            #region Structural Lines
+            Point[] LinePath = new Point[4]
+            {
+                new Point(Width, DepLine.Location.Y + DepLine.Height + 10 - (SizeRatio / 5)),
+                new Point(20 + (2 * SizeRatio),DepLine.Location.Y + DepLine.Height + 10 - (SizeRatio / 5)),
+                new Point(20 + (2 * SizeRatio), 350 + (25 * SizeRatio)),
+                new Point(Width, 350 + (25 * SizeRatio))
+            };
+            byte[] LinePathTypes = new byte[4]
+            {
+                (byte)PathPointType.Line,
+                (byte)PathPointType.Line,
+                (byte)PathPointType.Line,
+                (byte)PathPointType.Line
+            };
+            e.Graphics.DrawPath(LinePen, new System.Drawing.Drawing2D.GraphicsPath(LinePath, LinePathTypes));
+            e.Graphics.DrawLine(LinePen,
+                20 + (2 * SizeRatio),
+                200 + (13 * SizeRatio),
+                Width,
+                200 + (13 * SizeRatio));
+            e.Graphics.DrawLine(new Pen(AppliedTheme.Secondary, 6 + (SizeRatio / 2)),
+                new Point(600 + (60 * SizeRatio), DepLine.Location.Y + DepLine.Height + 10 - (SizeRatio / 5)),
+                new Point(600 + (60 * SizeRatio), 350 + (25 * SizeRatio)));
+            #endregion
+
+            #region Text Lines
+            e.Graphics.DrawLine(LinePen,
+                NameLine.Location.X + NameLine.Width,
+                NameLine.Location.Y + NameLine.Height - 10 - (SizeRatio / 5),
+                Width,
+                NameLine.Location.Y + NameLine.Height - 10 - (SizeRatio / 5));
+            e.Graphics.DrawLine(LinePen,
+                BirthLine.Location.X + BirthLine.Width,
+                BirthLine.Location.Y + BirthLine.Height - 10 - (SizeRatio / 5),
+                Width,
+                BirthLine.Location.Y + BirthLine.Height - 10 - (SizeRatio / 5));
+            e.Graphics.DrawLine(LinePen,
+                DepLine.Location.X + DepLine.Width,
+                DepLine.Location.Y + DepLine.Height - 10 - (SizeRatio / 5),
+                Width,
+                DepLine.Location.Y + DepLine.Height - 10 - (SizeRatio / 5));
+            
+            #endregion
+        }
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+
+            HeightRatio = Height / ((float)xHeight);
+            xHeight = Height;
+            WidthRatio = Width / ((float)xWidth);
+            xWidth = Width;
+            int SizeRatio = (Height - 470) / 30;
+
+            string[] ScaleBlacklist =
+            {
+                "SettingsIcon"
+            };
+
+            foreach (Control c in Controls)
+            {
+                c.Font = new Font(c.Font.FontFamily, (int)Math.Round(c.Font.Size * HeightRatio), c.Font.Style);
+
+                if (ScaleBlacklist.Contains(c.Name))                        // The Fontsize always scales with the Object, but some objects need to keep their dimensions
+                    continue;
+
+                c.Bounds = new Rectangle(
+                    (int)Math.Round(c.Location.X * WidthRatio),
+                    (int)Math.Round(c.Location.Y * HeightRatio),
+                    (int)Math.Round(c.Width * WidthRatio),
+                    (int)Math.Round(c.Height * HeightRatio));
+            }
             try
             {
-                connectionString = File.ReadAllText(Environment.CurrentDirectory + "\\confDB.txt");
+                if (YearAnnouncement != null)
+                    CurrentYearField.Location = new Point(YearAnnouncement.Location.X + YearAnnouncement.Width, YearAnnouncement.Location.Y);
+
+                if (SettingsIcon != null)
+                    SettingsIcon.Size = new Size((int)Math.Round(SettingsIcon.Width * HeightRatio),
+                                                (int)Math.Round(SettingsIcon.Height * HeightRatio));
             }
-            catch (Exception ex)
-            {
-                _ = MessageBox.Show(ex.Message +
-                                "\n\nBitte sorgen Sie dafür, dass im ausführenden Verzeichnis die Informationen zum Verbinden zur Datenbank angegeben sind",
-                                "Config-Dateien konnten nicht geladen werden!",
-                                MessageBoxButton.OK);
-                //Close();
-            }
+            catch { }
         }
-
-        private void InputPanel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            /*
-             * Wenn es schon vor kurzem geklickt wurde und nochmal geklickt wird, dann wird
-             *      leftDoubleClicked = true;
-             *      
-             * Ansonsonsten wird es false aber
-             *      leftClicked = true;
-             */
-            bool _r = leftClicked && (DateTime.UtcNow - leftClickedTimestamp).TotalMilliseconds < 500;
-            leftDoubleClicked = _r ? _r : leftDoubleClicked;
-            leftClicked = !_r;
-            leftClickedTimestamp = DateTime.UtcNow;
-        }
-
-        private void InputPanel_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            if (leftClicked && (DateTime.UtcNow - leftClickedTimestamp).TotalMilliseconds < 750)
-            {
-                Console.WriteLine("YOOOOOO");
-            }
-            else if (leftDoubleClicked && (DateTime.UtcNow - leftClickedTimestamp).TotalMilliseconds < 500)
-            {
-                Console.WriteLine("Damn, Doubletrouble");
-                leftClicked = false;
-                leftDoubleClicked = false;
-
-                if(hasFile)
-                {
-                    InputPanel.Content = Path.Split('\\')[Path.Split('\\').Length - 1] + " wird ausgeführt...";
-                    InputPanel.HorizontalContentAlignment = HorizontalAlignment.Center;
-                    InputPanel.VerticalContentAlignment = VerticalAlignment.Center;
-
-                    ExecuteSQL();
-                }
-            }
-            else
-            {
-                leftClicked = false;
-                leftDoubleClicked = false;
-            }
-        }
-
-        private void InputPanel_Drop(object sender, DragEventArgs e)
-        {
-            string[] filePaths = (string[])e.Data.GetData(DataFormats.FileDrop);
-            Path = filePaths[0];
-
-            if(filePaths.Length > 1)
-                _ = MessageBox.Show("Bitte nur eine Datei zugleich ablegen");
-            else
-            {
-                if(Path.Split('.')[Path.Split('.').Length - 1] == "sql")
-                {
-                    try
-                    {
-                        commandString = string.Join("\n", File.ReadAllLines(Path));
-                        hasFile = true;
-                        InputPanel.Content = Path.Split('\\')[Path.Split('\\').Length - 1] + " wurde abgelegt!\nDoppelklick zum ausführen!";
-                        InputPanel.HorizontalContentAlignment = HorizontalAlignment.Center;
-                        InputPanel.VerticalContentAlignment = VerticalAlignment.Center;
-                    }
-                    catch (Exception ex)
-                    {
-                        _ = MessageBox.Show("Es ist ein Fehler aufgetreten:\n\n" + ex.Message);
-                    }
-                }
-                else
-                    _ = MessageBox.Show("Die abgelegte Datei ist keine .sql-Datei.");
-            }
-        }
-
-        /// <summary>
-        /// Führt den angegebenen SQLCommand aus und gibt das Ergebnis als <see cref="List{T}"/> mit allen Zeilen als <see cref="TableRow"/> aus
-        /// </summary>
-        /// <param name="cmd"><see cref="SqlCommand"/> der aus der Datei gelesen wurde</param>
-        /// <returns><see cref="List{T}"/> aus <see cref="TableRow"/>-Objekten</returns>
-        private void ExecuteSQL()
-        {
-            BackgroundWorker worker = new BackgroundWorker();
-            worker.WorkerReportsProgress = true;
-            worker.DoWork += new DoWorkEventHandler(worker_DoWork);
-            worker.ProgressChanged += new ProgressChangedEventHandler(worker_ProgressChanged);
-            worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(worker_RunWorkerCompleted);
-
-            worker.RunWorkerAsync(worker);
-        }
-
-        void worker_DoWork(object sender, DoWorkEventArgs e)
-        {
-            using (SqlCommand cmd = new SqlCommand(commandString))
-            {
-                using (SqlConnection cn = new SqlConnection(connectionString))
-                {
-                    cn.Open();
-                    cmd.Connection = cn;
-                    cmd.CommandTimeout = 6000;
-                    using (SqlDataReader read = cmd.ExecuteReader())
-                    {
-                        while(read.Read())
-                        {
-                            TableRow tr = new TableRow();
-
-                            for (int i = 0; i < read.FieldCount; i++)
-                            {
-                                if(read.IsDBNull(i))
-                                    tr.Columns.Add(new KeyValuePair<string, object>(read.GetName(i), ""));
-                                else
-                                    tr.Columns.Add(new KeyValuePair<string, object>(read.GetName(i), read.GetValue(i)));
-                                ((BackgroundWorker)e.Argument).ReportProgress(1);
-                            }
-                            Table.Add(tr);
-                        }
-                    }
-                }
-            }
-        }
-        private void worker_ProgressChanged(object sender, ProgressChangedEventArgs e) 
-        {
-            
-        }
-        private void worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            Paragraph paragraph = new Paragraph();
-            paragraph.Inlines.Add(TableToString(Table));
-            FlowDocument flowDocument = new FlowDocument();
-            flowDocument.Blocks.Add(paragraph);
-            OutputBox.Document = flowDocument;
-        }
-
-
-        private void WriteXLS()
-        {
-
-        }
-
-        private string TableToString(List<TableRow> table)
-        {
-            string OUT = "";
-            int _cols = table[0].Columns.Count;
-            int _rows = table.Count;
-            int[] lengths = new int[_cols];         // lengths[] listet die Zeichenlänge der Spalten
-
-            /*
-             * Schaut, wie lang die Spalten werden können und merkt sich den Wert in lengths[]
-             */
-            foreach(TableRow row in Table)
-            {
-                int i = 0;
-                foreach(KeyValuePair<string, object> kv in row.Columns)
-                {
-                    if(lengths[i] < kv.Value.ToString().Length || lengths[i] < kv.Key.Length)
-                        lengths[i] = kv.Value.ToString().Length > kv.Key.Length ? kv.Value.ToString().Length : kv.Key.Length;
-                    i++;
-                }
-            }
-
-
-            /*
-             * Schreibt die Spaltennamen auf
-             */
-            for (int i = 0; i < _cols; i++)
-                OUT += table[0].Columns[i].Key + EmptyFiller(lengths[i] - table[0].Columns[i].Key.Length) + " |";
-            OUT += "\n";
-            for (int i = 0; i < _cols; i++)
-                OUT += LineFiller(lengths[i]) + "+";
-            OUT += "\n";
-
-            /*
-             * Schreibt die einzelnen Zeilen mit den Spalten in gleichem Abstand geteilt auf
-             */
-            for (int i = 0; i < _rows; i++)
-            {
-                int j = 0;
-                foreach(KeyValuePair<string, object> kv in table[i].Columns)
-                {
-                    OUT += kv.Value + EmptyFiller(lengths[j] - kv.Value.ToString().Length) + " |";
-                    j++;
-                }
-                OUT += "\n";
-            }
-
-
-            return OUT;
-        }
-
-        private string EmptyFiller(int SpaceAmount)
-        {
-            string OUT = "";
-            for (int i = SpaceAmount; i > 0; i--)
-                OUT += " ";
-            return OUT;
-        }
-        private string LineFiller(int LineLength)
-        {
-            string OUT = "-";
-            for (int i = LineLength; i > 0; i--)
-                OUT += "-";
-            return OUT;
-        }
-    }
-
-    /// <summary>
-    /// Stellt eine Reihe in einer Tabelle dar
-    /// </summary>
-    public class TableRow
-    {
-        /// <summary>
-        /// Beinhaltet die Werte in der Tabellenreiehe, eine Collection and KeyValuePairs
-        /// <list type="Backspace"/>
-        /// string - Name der Spalte
-        /// <list type="Backspace"/>
-        /// object - Wert, der in der entsprechenden Spalte steht, kann jeden Typ annehmen
-        /// </summary>
-        public ObservableCollection<KeyValuePair<string, object>> Columns { get; set; }
-
-        public TableRow() { Columns = new ObservableCollection<KeyValuePair<string, object>>(); }
-
-        /// <summary>
-        /// Gibt die Variable in der namentlich angegebenen Spalte aus
-        /// </summary>
-        /// <param name="ColumnName"></param>
-        /// <returns><see cref="object"/> in der Zelle, falls die Spalte nicht existiet </returns>
-        public object GetColumnValue(string ColumnName)
-        {
-            foreach (KeyValuePair<string, object> kv in Columns)
-                if (kv.Key == ColumnName)
-                    return kv.Value;
-            return null;
-        }
-
-        /// <summary>
-        /// Gibt alle Werte in der Zeile allein zurück als Array, sortiert nach Abfrage
-        /// </summary>
-        /// <returns><see cref="object"/><c>[]</c> aller Werte in der Zeile</returns>
-        public object[] GetColumnValues()
-        {
-            object[] OUT = new object[0];
-            for (int i = 0; i < Columns.Count; i++)
-                OUT[i] = Columns[i].Value;
-            return OUT;
-        }
-
-        public override string ToString()
-            => "( " + string.Join(" | ", Columns) + " )";
     }
 }
